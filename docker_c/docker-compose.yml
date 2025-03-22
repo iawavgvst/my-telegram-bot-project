@@ -1,0 +1,54 @@
+version: '3.1'
+
+services:
+    nginx:
+        image: nginx:latest #последняя версия
+        container_name: tbot-webserver
+        working_dir: /application
+        networks:
+            - internal
+        ports:
+            - "8081:80"
+        volumes:
+            - ./../:/application
+            - ./nginx/conf.d:/etc/nginx/conf.d
+        depends_on:
+            - php-fpm
+
+    php-fpm:
+        build:
+            context: .
+            dockerfile: php-fpm/Dockerfile
+        container_name: tbot-php-fpm
+        working_dir: /application
+        networks:
+            - internal
+        volumes:
+            - ./../:/application
+            - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/php.ini
+        depends_on:
+            - pgsql
+
+    pgsql:
+        image: postgres:17
+        restart: always
+        container_name: pgsql
+        environment:
+            POSTGRES_DB: dbot
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            PGPASSWORD: password
+        volumes:
+            - ./pgsql:/tmp
+            - 'postgres_data:/var/lib/postgresql/data'
+        networks:
+            - internal
+        ports:
+            - "5439:5432"
+
+volumes:
+    postgres_data:
+        driver: local
+networks:
+    internal:
+        driver: bridge
